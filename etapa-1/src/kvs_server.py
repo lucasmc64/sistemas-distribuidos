@@ -10,6 +10,7 @@ from sys import argv
 keys = {}
 
 class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
+    
     def Get(self, request, context):
         # do something
         return kvs_pb2.KeyValueVersionReply("","",0)
@@ -27,32 +28,44 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
             yield kvs_pb2.KeyValueVersionReply()
     
     def Put(self, request, context):
-        checkKey = keys.get(request.key)
+        findKey = keys.get(request.key)
 
-        if checkKey == None:
-            old_value,old_version = "",0
+        if findKey == None:
+            old_value, old_version = "", 0
+            keys[request.key] = []
         else:
-            (old_value,old_version) = checkKey
+            (old_value, old_version) = findKey[-1]
 
-        version = int(round(time()*1000))
-        keys[request.key] = (request.val,version)
+        version = int(round(time() * 1000))
+        keys[request.key].append((request.val, version))
         print(f"new key/update: {request.key} {request.val} {version}")
-        return kvs_pb2.PutReply(
-                                key=request.key,
-                                old_val=old_value,
-                                old_ver=old_version,
-                                ver=version
-                                )
+        return kvs_pb2.PutReply(key=request.key, old_val=old_value, old_ver=old_version, ver=version)
     
     def PutAll(self, request_iterator, context):
-        # do something
+        
         for request in request_iterator:
-            # something
-            yield kvs_pb2.PutReply()
+
+            findKey = keys.get(request.key)
+
+            if findKey == None:
+                old_value, old_version = "", 0
+                keys[request.key] = []
+            else:
+                (old_value, old_version) = findKey[-1]
+
+            version = int(round(time() * 1000))
+            keys[request.key].append((request.val, version))
+            print(f"new key/update: {request.key} {request.val} {version}")
+            
+            yield kvs_pb2.PutReply(key=request.key, old_val=old_value, old_ver=old_version, ver=version)
     
     def Del(self, request, context):
-        # do something
-        return kvs_pb2.KeyValueVersionReply()
+        if request.key in keys:
+            (value, version) = keys.pop(request.key)[-1]
+        else:
+            value, version = "", 0
+
+        return kvs_pb2.KeyValueVersionReply(key=request.key, val=value, ver=version)
     
     def DelRange(self, request, context):
         # do something
@@ -61,14 +74,25 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
             yield kvs_pb2.KeyValueVersionReply()
     
     def DelAll(self, request_iterator, context):
-        # do something
+        
         for request in request_iterator:
-            # something
-            yield kvs_pb2.KeyValueVersionReply()
+            if request.key in keys:
+                (value, version) = keys.pop(request.key)[-1]
+            else:
+                value, version = "", 0
+            
+            yield kvs_pb2.KeyValueVersionReply(key=request.key, val=value, ver=version)
     
     def Trim(self, request, context):
-        # do something
-        return kvs_pb2.KeyValueVersionReply()
+        findKey = keys.get(request.key)
+
+        if findKey == None:
+            value, version = "", 0
+        else:
+            (value, version) = findKey[-1]
+            keys[request.key] = findKey[-1]
+
+        return kvs_pb2.KeyValueVersionReply(key=request.key, val=value, ver=version)
     
 def serve():
     port = argv[1]
