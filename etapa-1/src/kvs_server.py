@@ -105,7 +105,7 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
             value, version = "", 0
         else:
             (value, version) = findKey[-1]
-            keys[request.key] = findKey[-1]
+            keys[request.key] = [findKey[-1]]
 
         return kvs_pb2.KeyValueVersionReply(key=request.key, val=value, ver=version)
     
