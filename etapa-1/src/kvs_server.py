@@ -12,20 +12,34 @@ keys = {}
 class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
     
     def Get(self, request, context):
-        # do something
-        return kvs_pb2.KeyValueVersionReply("","",0)
+        findKey = keys.get(request.key)
+
+        value, version = None, None
+
+        if findKey != None:
+            print("there is key")
+            if request.ver <= 0:
+                (value, version) = findKey[-1]
+            else:
+                for i in range(len(findKey)-1,-1,-1):
+                    if findKey[i][1] == request.ver or findKey[i][1] < request.ver:
+                        (value, version) = findKey[i]
+                        break
+
+        print(f"Get key: {request.key} val: {value} ver: {version}")
+        return kvs_pb2.KeyValueVersionReply(key=request.key, val=value, ver=version or request.ver)
     
     def GetRange(self, request, context):
         # do something
         for key in keys:
             if True:
-                yield kvs_pb2.KeyValueVersionReply()
+                yield kvs_pb2.KeyValueVersionReply(key="", val="", ver=0)
     
     def GetAll(self, request_iterator, context):
         # do something
         for request in request_iterator:
             # something
-            yield kvs_pb2.KeyValueVersionReply()
+            yield kvs_pb2.KeyValueVersionReply(key="", val="", ver=0)
     
     def Put(self, request, context):
         findKey = keys.get(request.key)
@@ -45,6 +59,7 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
         
         for request in request_iterator:
 
+            print("on a request")
             findKey = keys.get(request.key)
 
             if findKey == None:
@@ -71,7 +86,7 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
         # do something
         for key in keys:
             # something
-            yield kvs_pb2.KeyValueVersionReply()
+            yield kvs_pb2.KeyValueVersionReply(key="", val="", ver=0)
     
     def DelAll(self, request_iterator, context):
         
