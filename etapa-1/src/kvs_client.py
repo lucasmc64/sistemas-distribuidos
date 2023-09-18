@@ -27,16 +27,17 @@ def run():
         stub = kvs_pb2_grpc.KeyValueStoreStub(channel)
 
         print("--- Key Value Store ---")
-        print("1. Get")
-        print("2. GetRange (WIP)")
-        print("3. GetAll (WIP)")
-        print("4. Put")
-        print("5. PutAll")
-        print("6. Del")
-        print("7. DelRange (WIP)")
-        print("8. DellAll")
-        print("9. Trim")
+        print("1.  Get")
+        print("2.  GetRange (WIP)")
+        print("3.  GetAll (WIP)")
+        print("4.  Put")
+        print("5.  PutAll")
+        print("6.  Del")
+        print("7.  DelRange (WIP)")
+        print("8.  DellAll")
+        print("9.  Trim")
         print("10. Exit")
+
         while True:
 
             op = int(input("\nSelect operation: "))
