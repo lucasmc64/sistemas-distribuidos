@@ -53,10 +53,31 @@ def run():
                     ver = int(ver)
                 response = stub.Get(kvs_pb2.KeyRequest(key=key, ver=ver))
 
-
             elif op == 2:
                 # getrange
-                response = 0
+                fr = {}
+                to = {}
+
+                fr["key"] = input("\nFrom key: ")
+                fr["ver"] = input("From ver: ")
+
+                if(len(fr["ver"]) == 0):
+                    fr.pop("ver")
+                else:
+                    fr["ver"] = int(fr["ver"])
+
+                to["key"] = input("To key: ")
+                to["ver"] = input("To ver: ")
+                
+                if(len(to["ver"]) == 0):
+                    to.pop("ver")
+                else:
+                    to["ver"] = int(to["ver"])
+
+                response = []
+                
+                for r in stub.GetRange(kvs_pb2.KeyRange(fr=fr, to=to)):
+                    response.append(r)
 
             elif op == 3:
                 # getall

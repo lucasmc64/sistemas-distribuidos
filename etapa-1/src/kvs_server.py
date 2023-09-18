@@ -30,10 +30,17 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
         return kvs_pb2.KeyValueVersionReply(key=request.key, val=value, ver=version or request.ver)
     
     def GetRange(self, request, context):
-        # do something
+        fr = self.Get(request.fr, context)
+        to = self.Get(request.to, context)
+
         for key in keys:
-            if True:
-                yield kvs_pb2.KeyValueVersionReply(key="", val="", ver=0)
+            (value, version) = keys[key][-1]
+            print(f"{fr.ver} >= {version} and {version} <= {to.ver}")
+            print(f"{fr.ver >= version} and {version <= to.ver}")
+            print(fr.ver >= version and version <= to.ver)
+
+            if fr.ver <= version and version <= to.ver:
+                yield kvs_pb2.KeyValueVersionReply(key=key, val=value, ver=version)
     
     def GetAll(self, request_iterator, context):
         # do something
