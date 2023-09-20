@@ -30,10 +30,13 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
         return kvs_pb2.KeyValueVersionReply(key=request.key, val=value, ver=version or request.ver)
     
     def GetRange(self, request, context):
-        fr = self.Get(request.fr, context)
-        to = self.Get(request.to, context)
+        greatest_version = request.fr.ver if request.fr.ver > request.to.ver else request.to.ver
 
-        greatest_version = fr.ver if fr.ver > to.ver else to.ver
+        fr_version = None if request.fr.ver <= 0 else greatest_version
+        fr = self.Get(kvs_pb2.KeyRequest(key=request.fr.key, ver=fr_version), context)
+
+        to_version = None if request.to.ver <= 0 else greatest_version
+        to = self.Get(kvs_pb2.KeyRequest(key=request.to.key, ver=to_version), context)
 
         for key in sorted(keys):
             found_data = self.Get(kvs_pb2.KeyRequest(key=key, ver=greatest_version), context=context)
