@@ -22,6 +22,24 @@ def del_requests(keys):
     for r in requests:
         yield r
 
+def get_all_requests():
+    print("\n> Enter an empty key to finish request!")
+
+    while True:
+        key = input("\nKey: ")
+
+        if len(key) == 0:
+            break
+
+        version = input("Version: ")
+
+        if(len(version) > 0):
+            version = int(version)
+        else:
+            version = None
+
+        yield kvs_pb2.KeyRequest(key=key, ver=version)
+
 def run():
     with grpc.insecure_channel("localhost:" + argv[1]) as channel:
         stub = kvs_pb2_grpc.KeyValueStoreStub(channel)
@@ -81,7 +99,10 @@ def run():
 
             elif op == 3:
                 # getall
-                response = 0
+                response = []
+
+                for r in stub.GetAll(get_all_requests()):
+                    response.append(r)
 
             elif op == 4:
                 # put

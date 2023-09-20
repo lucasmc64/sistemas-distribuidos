@@ -45,10 +45,24 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
                 yield kvs_pb2.KeyValueVersionReply(key=key, val=found_data.val, ver=found_data.ver)
     
     def GetAll(self, request_iterator, context):
-        # do something
+        requests = []
+        responses = {}
+
         for request in request_iterator:
-            # something
-            yield kvs_pb2.KeyValueVersionReply(key="", val="", ver=0)
+            requests.append(request)
+
+        def getVersions(request):
+            return request.ver
+        
+        greatest_version = max(list(map(getVersions, requests)))
+
+        for request in requests:
+            version = None if request.ver <= 0 else greatest_version
+            found_data = self.Get(kvs_pb2.KeyRequest(key=request.key, ver=version), context)
+            responses[found_data.key] = found_data
+
+        for key in sorted(responses.keys()):
+            yield responses[key]
     
     def Put(self, request, context):
         findKey = keys.get(request.key)
