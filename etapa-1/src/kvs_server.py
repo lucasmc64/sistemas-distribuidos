@@ -35,7 +35,7 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
 
         greatest_version = fr.ver if fr.ver > to.ver else to.ver
 
-        for key in keys:
+        for key in sorted(keys):
             found_data = self.Get(kvs_pb2.KeyRequest(key=key, ver=greatest_version), context=context)
 
             if fr.key <= key and key <= to.key and found_data.ver > 0:
