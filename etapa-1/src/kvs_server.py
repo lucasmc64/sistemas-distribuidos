@@ -33,14 +33,13 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
         fr = self.Get(request.fr, context)
         to = self.Get(request.to, context)
 
-        for key in keys:
-            (value, version) = keys[key][-1]
-            print(f"{fr.ver} >= {version} and {version} <= {to.ver}")
-            print(f"{fr.ver >= version} and {version <= to.ver}")
-            print(fr.ver >= version and version <= to.ver)
+        greatest_version = fr.ver if fr.ver > to.ver else to.ver
 
-            if fr.ver <= version and version <= to.ver:
-                yield kvs_pb2.KeyValueVersionReply(key=key, val=value, ver=version)
+        for key in keys:
+            found_data = self.Get(kvs_pb2.KeyRequest(key=key, ver=greatest_version), context=context)
+
+            if fr.key <= key and key <= to.key and found_data.ver > 0:
+                yield kvs_pb2.KeyValueVersionReply(key=key, val=found_data.val, ver=found_data.ver)
     
     def GetAll(self, request_iterator, context):
         # do something
