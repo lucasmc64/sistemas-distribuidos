@@ -5,8 +5,8 @@ import kvs_pb2_grpc
 from sys import argv
 
 def put_requests(keys, vals):
-
     requests = []
+
     for i in range(len(keys)):
         requests.append(kvs_pb2.KeyValueRequest(key=keys[i], val=vals[i]))
 
@@ -14,8 +14,8 @@ def put_requests(keys, vals):
         yield r
 
 def del_requests(keys):
-
     requests = []
+
     for i in range(len(keys)):
         requests.append(kvs_pb2.KeyRequest(key=keys[i]))
 
@@ -27,15 +27,15 @@ def run():
         stub = kvs_pb2_grpc.KeyValueStoreStub(channel)
 
         print("--- Key Value Store ---")
-        print("1.  Get")
-        print("2.  GetRange (WIP)")
-        print("3.  GetAll (WIP)")
-        print("4.  Put")
-        print("5.  PutAll")
-        print("6.  Del")
-        print("7.  DelRange (WIP)")
-        print("8.  DellAll")
-        print("9.  Trim")
+        print(" 1. Get")
+        print(" 2. GetRange (WIP)")
+        print(" 3. GetAll (WIP)")
+        print(" 4. Put")
+        print(" 5. PutAll")
+        print(" 6. Del")
+        print(" 7. DelRange (WIP)")
+        print(" 8. DellAll")
+        print(" 9. Trim")
         print("10. Exit")
 
         while True:
