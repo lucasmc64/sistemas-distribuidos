@@ -79,7 +79,6 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
         return kvs_pb2.PutReply(key=request.key, old_val=old_value, old_ver=old_version, ver=version)
     
     def PutAll(self, request_iterator, context):
-        
         for request in request_iterator:
 
             print("on a request")
@@ -106,10 +105,14 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
         return kvs_pb2.KeyValueVersionReply(key=request.key, val=value, ver=version)
     
     def DelRange(self, request, context):
-        # do something
+        responses = []
+
         for key in keys:
-            # something
-            yield kvs_pb2.KeyValueVersionReply(key="", val="", ver=0)
+            if request.fr.key <= key and key <= request.to.key:
+                responses.append(kvs_pb2.KeyRequest(key=key))
+
+        for response in responses:
+            yield self.Del(request=response, context=context)
     
     def DelAll(self, request_iterator, context):
         

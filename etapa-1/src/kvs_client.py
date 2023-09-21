@@ -46,12 +46,12 @@ def run():
 
         print("--- Key Value Store ---")
         print(" 1. Get")
-        print(" 2. GetRange (WIP)")
-        print(" 3. GetAll (WIP)")
+        print(" 2. GetRange")
+        print(" 3. GetAll")
         print(" 4. Put")
         print(" 5. PutAll")
         print(" 6. Del")
-        print(" 7. DelRange (WIP)")
+        print(" 7. DelRange")
         print(" 8. DellAll")
         print(" 9. Trim")
         print("10. Exit")
@@ -129,8 +129,16 @@ def run():
                 response = stub.Del(kvs_pb2.KeyRequest(key=key))
 
             elif op == 7:
-                # delrange
-                response = 0
+                fr = {}
+                to = {}
+
+                fr["key"] = input("\nFrom key: ")
+                to["key"] = input("To key: ")
+
+                response = []
+                
+                for r in stub.DelRange(kvs_pb2.KeyRange(fr=fr, to=to)):
+                    response.append(r)
 
             elif op == 8:
                 # delall
