@@ -19,13 +19,17 @@ source "${SCRIPT_DIRECTORY}/pyenv/bin/activate"
 
 python3 -m pip install --upgrade pip
 
-# Install gRPC 
+# Install gRPC
 
 python3 -m pip install grpcio
 
 # Install gRPC tools (plugin)
 
 python3 -m pip install grpcio-tools
+
+# Install MQTT
+
+python3 -m pip install paho-mqtt
 
 # Compile kvs.proto
 
