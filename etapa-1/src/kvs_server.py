@@ -7,10 +7,32 @@ import kvs_pb2_grpc
 from time import time
 from sys import argv
 
+from mqtt import client, qos
+
 keys = {}
 
-class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
-    
+class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer): 
+    def __init__(self):
+        def on_message(client, userdata, data):
+            decoded_msg = data.payload.decode('utf-8')
+            [key, value, version] = (decoded_msg[1:-1].split(", "))
+
+            value = int(value) if value else None
+            version = int(version) if version else None
+
+            if data.topic == "valkyrie/put":
+                print(f"Sync key \"{key}\" (put)")
+                self.Put(kvs_pb2.KeyValueRequest(key=key, val=value), context=None)
+            elif data.topic == "valkyrie/del":
+                print(f"Sync key \"{key}\" (del)")
+                self.Del(kvs_pb2.KeyRequest(key=key, ver=version), context=None)
+            elif data.topic == "valkyrie/trim":
+                print(f"Sync key \"{key}\" (trim)")
+                self.Trim(kvs_pb2.KeyRequest(key=key, ver=version), context=None)
+
+        client.on_message = on_message
+        print("Construtor")
+
     def Get(self, request, context):
         findKey = keys.get(request.key)
 
@@ -76,6 +98,9 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
         version = int(round(time() * 1000))
         keys[request.key].append((request.val, version))
         print(f"new key/update: {request.key} {request.val} {version}")
+
+        client.publish("valkyrie/put", f"({request.key}, {request.val}, {version})", qos)
+
         return kvs_pb2.PutReply(key=request.key, old_val=old_value, old_ver=old_version, ver=version)
     
     def PutAll(self, request_iterator, context):
@@ -93,6 +118,8 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
             version = int(round(time() * 1000))
             keys[request.key].append((request.val, version))
             print(f"new key/update: {request.key} {request.val} {version}")
+
+            client.publish("valkyrie/put", f"({request.key}, {request.val}, {version})", qos)
             
             yield kvs_pb2.PutReply(key=request.key, old_val=old_value, old_ver=old_version, ver=version)
     
@@ -102,6 +129,8 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
         else:
             value, version = "", 0
 
+        client.publish("valkyrie/del", f"({request.key})", qos)
+
         return kvs_pb2.KeyValueVersionReply(key=request.key, val=value, ver=version)
     
     def DelRange(self, request, context):
@@ -109,19 +138,21 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
 
         for key in keys:
             if request.fr.key <= key and key <= request.to.key:
+                client.publish("valkyrie/del", f"({key})", qos)
                 responses.append(kvs_pb2.KeyRequest(key=key))
 
         for response in responses:
             yield self.Del(request=response, context=context)
     
     def DelAll(self, request_iterator, context):
-        
         for request in request_iterator:
             if request.key in keys:
                 (value, version) = keys.pop(request.key)[-1]
             else:
                 value, version = "", 0
             
+            client.publish("valkyrie/del", f"({request.key})", qos)
+
             yield kvs_pb2.KeyValueVersionReply(key=request.key, val=value, ver=version)
     
     def Trim(self, request, context):
@@ -133,16 +164,21 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
             (value, version) = findKey[-1]
             keys[request.key] = [findKey[-1]]
 
+        client.publish("valkyrie/trim", f"({request.key})", qos)
+
         return kvs_pb2.KeyValueVersionReply(key=request.key, val=value, ver=version)
-    
+
 def serve():
-    port = argv[1]
+    server_port = argv[1]
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    kvs_pb2_grpc.add_KeyValueStoreServicer_to_server(KeyValueStore(), server)
-    server.add_insecure_port("[::]:" + port)
+    store = KeyValueStore()
+    kvs_pb2_grpc.add_KeyValueStoreServicer_to_server(store, server)
+    server.add_insecure_port("[::]:" + server_port)
     server.start()
-    print("Server started... Port: " + port)
+    client.loop_start()
+    print("Server started... Port: " + server_port)
     server.wait_for_termination()
+    client.loop_stop()
 
 if __name__ == "__main__":
     serve()
