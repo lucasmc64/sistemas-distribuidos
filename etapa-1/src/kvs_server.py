@@ -17,17 +17,17 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
             decoded_msg = data.payload.decode('utf-8')
             [key, value, version] = (decoded_msg[1:-1].split(", "))
 
-            value = int(value) if value else None
+            value = value if value else None
             version = int(version) if version else None
 
             if data.topic == "valkyrie/put":
-                print(f"Sync key \"{key}\" (put)")
+                print(f"> Sync key \"{key}\" with value \"{value}\" (put)")
                 self.Put(kvs_pb2.KeyValueRequest(key=key, val=value), context=None)
             elif data.topic == "valkyrie/del":
-                print(f"Sync key \"{key}\" (del)")
+                print(f"> Sync key \"{key}\" (del)")
                 self.Del(kvs_pb2.KeyRequest(key=key, ver=version), context=None)
             elif data.topic == "valkyrie/trim":
-                print(f"Sync key \"{key}\" (trim)")
+                print(f"> Sync key \"{key}\" (trim)")
                 self.Trim(kvs_pb2.KeyRequest(key=key, ver=version), context=None)
 
         client.on_message = on_message
