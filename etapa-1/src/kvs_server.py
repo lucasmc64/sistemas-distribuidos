@@ -12,8 +12,12 @@ from mqtt import client, qos
 keys = {}
 
 class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer): 
+
+    mqtt_msg = False
+
     def __init__(self):
         def on_message(client, userdata, data):
+            self.mqtt_msg = True
             decoded_msg = data.payload.decode('utf-8')
             [key, value, version] = (decoded_msg[1:-1].split(", "))
 
@@ -21,13 +25,13 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
             version = int(version) if version else None
 
             if data.topic == "valkyrie/put":
-                print(f"> Sync key \"{key}\" with value \"{value}\" (put)")
+                print(f"\n> Sync key \"{key}\" with value \"{value}\" (put)")
                 self.Put(kvs_pb2.KeyValueRequest(key=key, val=value), context=None)
             elif data.topic == "valkyrie/del":
-                print(f"> Sync key \"{key}\" (del)")
+                print(f"\n> Sync key \"{key}\" (del)")
                 self.Del(kvs_pb2.KeyRequest(key=key, ver=version), context=None)
             elif data.topic == "valkyrie/trim":
-                print(f"> Sync key \"{key}\" (trim)")
+                print(f"\n> Sync key \"{key}\" (trim)")
                 self.Trim(kvs_pb2.KeyRequest(key=key, ver=version), context=None)
 
         client.on_message = on_message
@@ -39,7 +43,7 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
         value, version = None, None
 
         if findKey != None:
-            print("there is key")
+            # print("there is key")
             if request.ver <= 0:
                 (value, version) = findKey[-1]
             else:
@@ -48,10 +52,11 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
                         (value, version) = findKey[i]
                         break
 
-        print(f"Get key: {request.key} val: {value} ver: {version}")
+        print(f"\nGet key: {request.key} val: {value} ver: {version}")
         return kvs_pb2.KeyValueVersionReply(key=request.key, val=value, ver=version or request.ver)
     
     def GetRange(self, request, context):
+        print("\nGet range:")
         greatest_version = request.fr.ver if request.fr.ver > request.to.ver else request.to.ver
 
         fr_version = None if request.fr.ver <= 0 else greatest_version
@@ -67,6 +72,7 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
                 yield kvs_pb2.KeyValueVersionReply(key=key, val=found_data.val, ver=found_data.ver)
     
     def GetAll(self, request_iterator, context):
+        print("\nGet all:")
         requests = []
         responses = {}
 
@@ -97,16 +103,19 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
 
         version = int(round(time() * 1000))
         keys[request.key].append((request.val, version))
-        print(f"new key/update: {request.key} {request.val} {version}")
 
-        client.publish("valkyrie/put", f"({request.key}, {request.val}, {version})", qos)
+        if self.mqtt_msg:
+            self.mqtt_msg = False
+        else:
+            client.publish("valkyrie/put", f"({request.key}, {request.val}, {version})", qos)
 
+        print(f"\nPut key: {request.key} val: {request.val} ver: {version}")
         return kvs_pb2.PutReply(key=request.key, old_val=old_value, old_ver=old_version, ver=version)
     
     def PutAll(self, request_iterator, context):
         for request in request_iterator:
 
-            print("on a request")
+            # print("on a request")
             findKey = keys.get(request.key)
 
             if findKey == None:
@@ -117,10 +126,13 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
 
             version = int(round(time() * 1000))
             keys[request.key].append((request.val, version))
-            print(f"new key/update: {request.key} {request.val} {version}")
 
-            client.publish("valkyrie/put", f"({request.key}, {request.val}, {version})", qos)
+            if self.mqtt_msg:
+                self.mqtt_msg = False
+            else:
+                client.publish("valkyrie/put", f"({request.key}, {request.val}, {version})", qos)
             
+            print(f"\nPut key: {request.key} val: {request.val} ver: {version}")
             yield kvs_pb2.PutReply(key=request.key, old_val=old_value, old_ver=old_version, ver=version)
     
     def Del(self, request, context):
@@ -129,16 +141,21 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
         else:
             value, version = "", 0
 
-        client.publish("valkyrie/del", f"({request.key})", qos)
+        if self.mqtt_msg:
+            self.mqtt_msg = False
+        else:
+            client.publish("valkyrie/del", f"({request.key}, 0, 0)", qos)
 
+        print(f"\nDelete key: {request.key} val: {value} ver: {version}")
         return kvs_pb2.KeyValueVersionReply(key=request.key, val=value, ver=version)
     
     def DelRange(self, request, context):
+        print("\nDelete range:")
         responses = []
 
         for key in keys:
             if request.fr.key <= key and key <= request.to.key:
-                client.publish("valkyrie/del", f"({key})", qos)
+                client.publish("valkyrie/del", f"({key}, 0, 0)", qos)
                 responses.append(kvs_pb2.KeyRequest(key=key))
 
         for response in responses:
@@ -151,8 +168,12 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
             else:
                 value, version = "", 0
             
-            client.publish("valkyrie/del", f"({request.key})", qos)
+            if self.mqtt_msg:
+                self.mqtt_msg = False
+            else:
+                client.publish("valkyrie/del", f"({request.key}, 0, 0)", qos)
 
+            print(f"\nDelete key: {request.key} val: {value} ver: {version}")
             yield kvs_pb2.KeyValueVersionReply(key=request.key, val=value, ver=version)
     
     def Trim(self, request, context):
@@ -164,8 +185,12 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
             (value, version) = findKey[-1]
             keys[request.key] = [findKey[-1]]
 
-        client.publish("valkyrie/trim", f"({request.key})", qos)
+        if self.mqtt_msg:
+            self.mqtt_msg = False
+        else:
+            client.publish("valkyrie/trim", f"({request.key}, 0, 0)", qos)
 
+        print(f"\nTrim key: {request.key} val: {value} ver: {version}")
         return kvs_pb2.KeyValueVersionReply(key=request.key, val=value, ver=version)
 
 def serve():
@@ -181,4 +206,7 @@ def serve():
     client.loop_stop()
 
 if __name__ == "__main__":
-    serve()
+    try:
+        serve()
+    except (KeyboardInterrupt):
+        print("\nStopping server...")

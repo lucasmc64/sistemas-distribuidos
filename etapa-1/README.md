@@ -20,7 +20,7 @@ The first step is to clone the project, either via terminal or GitHub Desktop, o
 
 - [Python](https://www.python.org/)
 
-  > Was used `venv` to create a virtual environment to encapsulate the dependencies. This feature requires python 3.10 and maybe will be necessary install some package like `python3.10-venv` as was in Pop!_OS 22.04. 
+  > Python `venv` was used to create a virtual environment to encapsulate the dependencies. This feature requires python 3.10 and maybe it will be necessary to install a package like `python3.10-venv` like it was in Pop!_OS 22.04. 
 - [MQTT](https://mqtt.org/)
 
 ### :mag: Installing dependencies

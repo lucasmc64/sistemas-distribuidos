@@ -62,7 +62,6 @@ def run():
 
             if op == 1:
                 # get
-                #response = stub.Get(kvs_pb2.KeyRequest(key="chave1"))
                 key = input("\nKey: ")
                 ver = input("Ver: ")
                 if ver == "":
@@ -129,6 +128,7 @@ def run():
                 response = stub.Del(kvs_pb2.KeyRequest(key=key))
 
             elif op == 7:
+                # delrange
                 fr = {}
                 to = {}
 
