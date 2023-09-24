@@ -3,6 +3,7 @@ import kvs_pb2
 import kvs_pb2_grpc
 
 from sys import argv
+from colors import RED, BLUE, GREEN, YELLOW, LIGHT_CYAN, RESET
 
 def put_requests(keys, vals):
     requests = []
@@ -23,7 +24,7 @@ def del_requests(keys):
         yield r
 
 def get_all_requests():
-    print("\n> Enter an empty key to finish request!")
+    print(f"\n{YELLOW}> Enter an empty key to finish request!{RESET}")
 
     while True:
         key = input("\nKey: ")
@@ -39,6 +40,14 @@ def get_all_requests():
             version = None
 
         yield kvs_pb2.KeyRequest(key=key, ver=version)
+
+def format_to_print(info):
+    result = []
+    
+    for [descriptor, value] in info.ListFields():
+        result.append(f"{LIGHT_CYAN}{descriptor.name}={RESET}{value}")
+       
+    return f"\n({', '.join(result)})"
 
 def run():
     with grpc.insecure_channel("localhost:" + argv[1]) as channel:
@@ -58,22 +67,28 @@ def run():
 
         while True:
             op = input("\nSelect operation: ")
+            result = ""
             
             if op.isdigit():
                 op = int(op)
 
             if op == 1:
                 # get
+                
                 key = input("\nKey: ")
                 ver = input("Ver: ")
+
                 if ver == "":
                     ver = None
                 else:
                     ver = int(ver)
+
                 response = stub.Get(kvs_pb2.KeyRequest(key=key, ver=ver))
+                result = format_to_print(response)
 
             elif op == 2:
                 # getrange
+                
                 fr = {}
                 to = {}
 
@@ -92,78 +107,87 @@ def run():
                     to.pop("ver")
                 else:
                     to["ver"] = int(to["ver"])
-
-                response = []
                 
-                for r in stub.GetRange(kvs_pb2.KeyRange(fr=fr, to=to)):
-                    response.append(r)
+                for response in stub.GetRange(kvs_pb2.KeyRange(fr=fr, to=to)):
+                    result += format_to_print(response)
 
             elif op == 3:
                 # getall
-                response = []
 
-                for r in stub.GetAll(get_all_requests()):
-                    response.append(r)
+                for response in stub.GetAll(get_all_requests()):
+                    result += format_to_print(response)
 
             elif op == 4:
                 # put
+
                 key = input("\nKey: ")
                 val = input("Val: ")
+                
                 response = stub.Put(kvs_pb2.KeyValueRequest(key=key,val=val))
+                result = format_to_print(response)
     
             elif op == 5:
                 # putall
+
                 keys = input("\nKeys: ").split()
-                vals = input("Values: ").split()
+                vals = input("Vals: ").split()
 
                 if len(keys) != len(vals):
                     print("\nMissing key or value!")
                     continue
-                else:
-                    response = []
-                    for r in stub.PutAll(put_requests(keys, vals)):
-                        response.append(r)
+                
+                for response in stub.PutAll(put_requests(keys, vals)):
+                    result += format_to_print(response)
 
             elif op == 6:
                 # del
+
                 key = input("\nKey: ")
+
                 response = stub.Del(kvs_pb2.KeyRequest(key=key))
+                result = format_to_print(response)
 
             elif op == 7:
                 # delrange
+
                 fr = {}
                 to = {}
 
                 fr["key"] = input("\nFrom key: ")
                 to["key"] = input("To key: ")
-
-                response = []
                 
-                for r in stub.DelRange(kvs_pb2.KeyRange(fr=fr, to=to)):
-                    response.append(r)
+                for response in stub.DelRange(kvs_pb2.KeyRange(fr=fr, to=to)):
+                    result += format_to_print(response)
 
             elif op == 8:
                 # delall
+
                 keys = input("\nKeys: ").split()
-                response = []
-                for r in stub.DelAll(del_requests(keys)):
-                    response.append(r)
+                
+                for response in stub.DelAll(del_requests(keys)):
+                    result += format_to_print(response)
 
             elif op == 9:
                 # trim
+
                 key = input("\nKey: ")
+                
                 response = stub.Trim(kvs_pb2.KeyRequest(key=key))
+                result = format_to_print(response)
 
             elif op == 10:
                 # exit
-                print("\nExiting...")
+
+                print(f"\n{BLUE}> Exiting...{RESET}")
                 break
 
             else:
-                print("Invalid operation!")
+                # string or operation out of range
+
+                print(f"\n{RED}> Invalid operation!{RESET}")
                 continue
         
-            print(f"\nResponse: {response}")
+            print(f"\n{GREEN}> Response:{RESET}\n{result}")
 
 
 if __name__ == "__main__":
