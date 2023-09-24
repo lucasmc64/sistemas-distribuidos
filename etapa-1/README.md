@@ -69,9 +69,9 @@ To run the client, run the following script:
 
 Now you are running the project beautifully!
 
-## 💁Examples
+## 💁 Examples
 
-### `Get`
+### 🤲 `Get`
 
 Returns value for the key and version immediately less than or equal to the one entered.
 
@@ -108,7 +108,7 @@ Ver: 1695514564199
 (key=b, val=2, ver=1695514564199)
 ```
 
-### `GetRange`
+### 🤲 `GetRange`
 
 Returns values in the range between the two keys entered.
 
@@ -182,7 +182,7 @@ To ver: 1695514564200
 (key=d, val=4, ver=1695514564200)
 ```
 
-### `GetAll`
+### 🤲 `GetAll`
 
 Returns values for set of unordered given keys.
 
@@ -221,7 +221,7 @@ Key:
 (key=b, val=2, ver=1695514564199)
 ```
 
-### `Put`
+### ✍️ `Put`
 
 Updates/inserts entered value and key, returning value for previous key and version, as well as the new assigned version.
 
@@ -266,7 +266,7 @@ Val: 2
 (key=a, old_val=1, old_ver=1695520601457, ver=1695520689147)
 ```
 
-### `PutAll`
+### ✍️ `PutAll`
 
 Updates/inserts entered values and keys, returning, for each key, the previous value and version, as well as the new assigned version.
 
@@ -296,7 +296,7 @@ Vals: 1 2 9 8
 (key=l, ver=1695520747145)
 ```
 
-### `Del`
+### 👎️ `Del`
 
 Removes all values associated with the key and returns value for key and most current version or empty values if the key does not exist.
 
@@ -331,7 +331,7 @@ Ver:
 (key=a)
 ```
 
-### `DelRange`
+### 👎️ `DelRange`
 
 Removes values in the range between the two keys entered, returning the most current values for these keys or empty values for keys that do not exist.
 
@@ -363,7 +363,7 @@ To key: z
 (key=l, val=8, ver=1695520747145)
 ```
 
-### `DelAll`
+### 👎️ `DelAll`
 
 Removes values for the given set of keys and returns more current values or empty values for keys that do not exist.
 
@@ -391,7 +391,7 @@ Keys: b c d
 (key=d, val=4, ver=1695514564200)
 ```
 
-### `Trim`
+### 🤏 `Trim`
 
 Removes all values associated with the key except the most recent version and returns value and version for the key or empty values if key does not exist.
 
