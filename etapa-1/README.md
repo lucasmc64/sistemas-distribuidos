@@ -46,7 +46,11 @@ To run the server, simply run the following file:
 > If the `--port` flag is not used, the server will default to port `12345` and try to use it.
 
 ```bash
+# Without specify a custom port
 ./server.sh
+
+# Specifying a custom port
+./server.sh --port=1224
 ```
 
 To run the client, run the following script:
@@ -54,7 +58,11 @@ To run the client, run the following script:
 > If the `--port` flag is not given, the client will assume that the server is running on port `12345` and will try to connect to it.
 
 ```bash
+# Without specify a custom port
 ./client.sh
+
+# Specifying a custom port
+./client.sh --port=1224
 ```
 
 ### :tada: If everything went well...
