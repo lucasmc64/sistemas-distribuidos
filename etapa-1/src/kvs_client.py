@@ -57,8 +57,10 @@ def run():
         print("10. Exit")
 
         while True:
-
-            op = int(input("\nSelect operation: "))
+            op = input("\nSelect operation: ")
+            
+            if op.isdigit():
+                op = int(op)
 
             if op == 1:
                 # get
