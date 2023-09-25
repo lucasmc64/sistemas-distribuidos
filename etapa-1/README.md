@@ -447,6 +447,17 @@ We create a base file called `test.txt` which is at the root of the project. You
 ./client.sh < ./test.txt
 ```
 
+## 🎲 Data storage
+
+As we use Python, we take advantage of its implementation of dictionaries, using the key to access its value and version.
+This gave us easy access to information and facilitated data manipulation and storage.
+
+## ⛓️ Implementation Challenges
+
+As for gRPC, it seems to be a very sensitive technology. The terminal saw many errors before we finally started typing the data and internally calling other `KeyValueStore` methods passing the `context`.
+As far as MQTT is concerned, the implementation itself was not difficult after the initial setup, understanding that `context` could also be `None` and learning how to mitigate the receipt of your own publications.
+Another problem faced was dealing with the re-propagation of publications, as the servers that received the message, after carrying out the informed operation, were also issuing a publication, generating an endless cycle.
+
 ## :memo: License
 
 This project is under the MIT License v2.0 license. See the [LICENSE](LICENSE) for more information.
