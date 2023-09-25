@@ -64,6 +64,46 @@ abc
 1
 abc
 1695600000000
+4
+aa
+test
+1
+
+
+1
+aa
+a
+2
+
+
+
+
+3
+
+4
+
+
+4
+ab
+
+5
+
+
+5
+ac
+
+6
+
+7
+
+
+7
+aa
+
+8
+
+9
+
 10
 
 
@@ -115,5 +155,41 @@ trim        k = abc;
 
 get         k = abc;
             vr = 1695600000000;
+
+put         k = aa;
+            vl = test;
+
+-> Trying wrong inputs:
+
+get         k = "";
+
+get         k = aa;
+            vr = a;
+
+getrange    k = "" "";
+
+getall      k = "";
+
+put         k = "";
+            vl = "";
+
+put         k = ab;
+            vl = "";
+
+putall      k = "";
+            vl = "";
+
+putall      k = ac;
+            vl = "";
+
+del         k = "";
+
+delrange    k = "" "";
+
+delrange    k = aa "";
+
+delall      k = "";
+
+trim        k = "";
 
 end client

@@ -8,11 +8,12 @@ from time import time
 from sys import argv
 
 from mqtt import client, qos
+from colors import BLUE, GREEN, RESET
 
-keys = {}
 
 class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer): 
 
+    keys = {}
     mqtt_msg = False
 
     def __init__(self):
@@ -25,20 +26,26 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
             version = int(version) if version else None
 
             if data.topic == "valkyrie/put":
-                print(f"\n> Sync key \"{key}\" with value \"{value}\" (put)")
+                print(f"\n{GREEN}> Sync key \"{key}\" with value \"{value}\" (put){RESET}")
                 self.Put(kvs_pb2.KeyValueRequest(key=key, val=value), context=None)
             elif data.topic == "valkyrie/del":
-                print(f"\n> Sync key \"{key}\" (del)")
+                print(f"\n{GREEN}> Sync key \"{key}\" (del){RESET}")
                 self.Del(kvs_pb2.KeyRequest(key=key, ver=version), context=None)
             elif data.topic == "valkyrie/trim":
-                print(f"\n> Sync key \"{key}\" (trim)")
+                print(f"\n{GREEN}> Sync key \"{key}\" (trim){RESET}")
                 self.Trim(kvs_pb2.KeyRequest(key=key, ver=version), context=None)
 
         client.on_message = on_message
-        print("Construtor")
+        # print("Construtor")
 
     def Get(self, request, context):
-        findKey = keys.get(request.key)
+        if len(request.key) == 0:
+            msg = "Length of key must be greater or equal to 1"
+            context.set_details(msg)
+            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+            return kvs_pb2.KeyValueVersionReply()
+        
+        findKey = self.keys.get(request.key)
 
         value, version = None, None
 
@@ -52,11 +59,11 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
                         (value, version) = findKey[i]
                         break
 
-        print(f"\nGet key: {request.key} val: {value} ver: {version}")
+        print(f"\n{BLUE}Get key: {request.key} val: {value} ver: {version}{RESET}")
         return kvs_pb2.KeyValueVersionReply(key=request.key, val=value, ver=version or request.ver)
     
     def GetRange(self, request, context):
-        print("\nGet range:")
+        print(f"\n{BLUE}Get range:{RESET}")
         greatest_version = request.fr.ver if request.fr.ver > request.to.ver else request.to.ver
 
         fr_version = None if request.fr.ver <= 0 else greatest_version
@@ -65,14 +72,14 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
         to_version = None if request.to.ver <= 0 else greatest_version
         to = self.Get(kvs_pb2.KeyRequest(key=request.to.key, ver=to_version), context)
 
-        for key in sorted(keys):
+        for key in sorted(self.keys):
             found_data = self.Get(kvs_pb2.KeyRequest(key=key, ver=greatest_version), context=context)
 
             if fr.key <= key and key <= to.key and found_data.ver > 0:
                 yield kvs_pb2.KeyValueVersionReply(key=key, val=found_data.val, ver=found_data.ver)
     
     def GetAll(self, request_iterator, context):
-        print("\nGet all:")
+        print(f"\n{BLUE}Get all:{RESET}")
         requests = []
         responses = {}
 
@@ -84,7 +91,7 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
         
         greatest_version = max(list(map(getVersions, requests)))
 
-        for request in requests:
+        for request in requests:            
             version = None if request.ver <= 0 else greatest_version
             found_data = self.Get(kvs_pb2.KeyRequest(key=request.key, ver=version), context)
             responses[found_data.key] = found_data
@@ -93,51 +100,53 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
             yield responses[key]
     
     def Put(self, request, context):
-        findKey = keys.get(request.key)
+        if len(request.key) == 0:
+            msg = "Length of key must be greater or equal to 1"
+            context.set_details(msg)
+            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+            return kvs_pb2.PutReply()
+        
+        if len(request.val) == 0:
+            msg = "Value cannot be empty on a Put request"
+            context.set_details(msg)
+            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+            return kvs_pb2.PutReply()
+        
+        findKey = self.keys.get(request.key)
 
         if findKey == None:
             old_value, old_version = "", 0
-            keys[request.key] = []
+            self.keys[request.key] = []
         else:
             (old_value, old_version) = findKey[-1]
 
         version = int(round(time() * 1000))
-        keys[request.key].append((request.val, version))
+        self.keys[request.key].append((request.val, version))
 
         if self.mqtt_msg:
             self.mqtt_msg = False
         else:
             client.publish("valkyrie/put", f"({request.key}, {request.val}, {version})", qos)
 
-        print(f"\nPut key: {request.key} val: {request.val} ver: {version}")
+        print(f"\n{BLUE}Put key: {request.key} val: {request.val} ver: {version}{RESET}")
         return kvs_pb2.PutReply(key=request.key, old_val=old_value, old_ver=old_version, ver=version)
     
     def PutAll(self, request_iterator, context):
         for request in request_iterator:
 
-            # print("on a request")
-            findKey = keys.get(request.key)
-
-            if findKey == None:
-                old_value, old_version = "", 0
-                keys[request.key] = []
-            else:
-                (old_value, old_version) = findKey[-1]
-
-            version = int(round(time() * 1000))
-            keys[request.key].append((request.val, version))
-
-            if self.mqtt_msg:
-                self.mqtt_msg = False
-            else:
-                client.publish("valkyrie/put", f"({request.key}, {request.val}, {version})", qos)
+            response = self.Put(kvs_pb2.KeyValueRequest(key=request.key, val=request.val), context)
             
-            print(f"\nPut key: {request.key} val: {request.val} ver: {version}")
-            yield kvs_pb2.PutReply(key=request.key, old_val=old_value, old_ver=old_version, ver=version)
+            yield response
     
     def Del(self, request, context):
-        if request.key in keys:
-            (value, version) = keys.pop(request.key)[-1]
+        if len(request.key) == 0:
+            msg = "Length of key must be greater or equal to 1"
+            context.set_details(msg)
+            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+            return kvs_pb2.KeyValueVersionReply()
+
+        if request.key in self.keys:
+            (value, version) = self.keys.pop(request.key)[-1]
         else:
             value, version = "", 0
 
@@ -146,14 +155,14 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
         else:
             client.publish("valkyrie/del", f"({request.key}, 0, 0)", qos)
 
-        print(f"\nDelete key: {request.key} val: {value} ver: {version}")
+        print(f"\n{BLUE}Delete key: {request.key} val: {value} ver: {version}{RESET}")
         return kvs_pb2.KeyValueVersionReply(key=request.key, val=value, ver=version)
     
     def DelRange(self, request, context):
-        print("\nDelete range:")
+        print(f"\n{BLUE}Delete range:{RESET}")
         responses = []
 
-        for key in keys:
+        for key in self.keys:
             if request.fr.key <= key and key <= request.to.key:
                 client.publish("valkyrie/del", f"({key}, 0, 0)", qos)
                 responses.append(kvs_pb2.KeyRequest(key=key))
@@ -163,34 +172,33 @@ class KeyValueStore(kvs_pb2_grpc.KeyValueStoreServicer):
     
     def DelAll(self, request_iterator, context):
         for request in request_iterator:
-            if request.key in keys:
-                (value, version) = keys.pop(request.key)[-1]
-            else:
-                value, version = "", 0
             
-            if self.mqtt_msg:
-                self.mqtt_msg = False
-            else:
-                client.publish("valkyrie/del", f"({request.key}, 0, 0)", qos)
+            response = self.Del(kvs_pb2.KeyRequest(key=request.key), context)
 
-            print(f"\nDelete key: {request.key} val: {value} ver: {version}")
-            yield kvs_pb2.KeyValueVersionReply(key=request.key, val=value, ver=version)
+            yield response
     
     def Trim(self, request, context):
-        findKey = keys.get(request.key)
+        
+        if len(request.key) == 0:
+            msg = "Length of key must be greater or equal to 1"
+            context.set_details(msg)
+            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+            return kvs_pb2.KeyValueVersionReply()
+
+        findKey = self.keys.get(request.key)
 
         if findKey == None:
             value, version = "", 0
         else:
             (value, version) = findKey[-1]
-            keys[request.key] = [findKey[-1]]
+            self.keys[request.key] = [findKey[-1]]
 
         if self.mqtt_msg:
             self.mqtt_msg = False
         else:
             client.publish("valkyrie/trim", f"({request.key}, 0, 0)", qos)
 
-        print(f"\nTrim key: {request.key} val: {value} ver: {version}")
+        print(f"\n{BLUE}Trim key: {request.key} val: {value} ver: {version}{RESET}")
         return kvs_pb2.KeyValueVersionReply(key=request.key, val=value, ver=version)
 
 def serve():

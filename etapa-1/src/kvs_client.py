@@ -3,7 +3,7 @@ import kvs_pb2
 import kvs_pb2_grpc
 
 from sys import argv
-from colors import RED, BLUE, GREEN, YELLOW, LIGHT_CYAN, RESET
+from colors import RED, BLUE, GREEN, YELLOW, LIGHT_CYAN, RESET, BOLD
 
 def put_requests(keys, vals):
     requests = []
@@ -65,129 +65,155 @@ def run():
         print(" 9. Trim")
         print("10. Exit")
 
+        
         while True:
-            op = input("\nSelect operation: ")
-            result = ""
-            
-            if op.isdigit():
-                op = int(op)
+            try:
 
-            if op == 1:
-                # get
+                op = input("\nSelect operation: ")
+                result = ""
                 
-                key = input("\nKey: ")
-                ver = input("Ver: ")
+                if op.isdigit():
+                    op = int(op)
 
-                if ver == "":
-                    ver = None
+                if op == 1:
+                    # get
+                    
+                    key = input("\nKey: ")
+                    ver = input("Ver: ")
+
+                    if ver == "":
+                        ver = None
+                    else:
+                        ver = int(ver)
+
+                    response = stub.Get(kvs_pb2.KeyRequest(key=key, ver=ver))
+                    result = format_to_print(response)
+
+                elif op == 2:
+                    # getrange
+                    
+                    fr = {}
+                    to = {}
+
+                    fr["key"] = input("\nFrom key: ")
+                    fr["ver"] = input("From ver: ")
+
+                    if(len(fr["ver"]) == 0):
+                        fr.pop("ver")
+                    else:
+                        fr["ver"] = int(fr["ver"])
+
+                    to["key"] = input("To key: ")
+                    to["ver"] = input("To ver: ")
+                    
+                    if(len(to["ver"]) == 0):
+                        to.pop("ver")
+                    else:
+                        to["ver"] = int(to["ver"])
+                    
+                    for response in stub.GetRange(kvs_pb2.KeyRange(fr=fr, to=to)):
+                        result += format_to_print(response)
+
+                elif op == 3:
+                    # getall
+
+                    for response in stub.GetAll(get_all_requests()):
+                        result += format_to_print(response)
+
+                elif op == 4:
+                    # put
+
+                    key = input("\nKey: ")
+                    val = input("Val: ")
+                    
+                    response = stub.Put(kvs_pb2.KeyValueRequest(key=key,val=val))
+                    result = format_to_print(response)
+        
+                elif op == 5:
+                    # putall
+
+                    keys = input("\nKeys: ").split()
+                    vals = input("Vals: ").split()
+
+                    if len(keys) != len(vals):
+                        print(f"\n{RED}Missing key or value!{RESET}")
+                        continue
+                    
+                    for response in stub.PutAll(put_requests(keys, vals)):
+                        result += format_to_print(response)
+
+                elif op == 6:
+                    # del
+
+                    key = input("\nKey: ")
+
+                    response = stub.Del(kvs_pb2.KeyRequest(key=key))
+                    result = format_to_print(response)
+
+                elif op == 7:
+                    # delrange
+
+                    fr = {}
+                    to = {}
+
+                    fr["key"] = input("\nFrom key: ")
+                    to["key"] = input("To key: ")
+                    
+                    for response in stub.DelRange(kvs_pb2.KeyRange(fr=fr, to=to)):
+                        result += format_to_print(response)
+
+                elif op == 8:
+                    # delall
+
+                    keys = input("\nKeys: ").split()
+                    
+                    for response in stub.DelAll(del_requests(keys)):
+                        result += format_to_print(response)
+
+                elif op == 9:
+                    # trim
+
+                    key = input("\nKey: ")
+                    
+                    response = stub.Trim(kvs_pb2.KeyRequest(key=key))
+                    result = format_to_print(response)
+
+                elif op == 10:
+                    # exit
+                    
+                    print(f"\n{BLUE}> Exiting...{RESET}")
+                    break
+
                 else:
-                    ver = int(ver)
+                    # string or operation out of range
 
-                response = stub.Get(kvs_pb2.KeyRequest(key=key, ver=ver))
-                result = format_to_print(response)
-
-            elif op == 2:
-                # getrange
-                
-                fr = {}
-                to = {}
-
-                fr["key"] = input("\nFrom key: ")
-                fr["ver"] = input("From ver: ")
-
-                if(len(fr["ver"]) == 0):
-                    fr.pop("ver")
-                else:
-                    fr["ver"] = int(fr["ver"])
-
-                to["key"] = input("To key: ")
-                to["ver"] = input("To ver: ")
-                
-                if(len(to["ver"]) == 0):
-                    to.pop("ver")
-                else:
-                    to["ver"] = int(to["ver"])
-                
-                for response in stub.GetRange(kvs_pb2.KeyRange(fr=fr, to=to)):
-                    result += format_to_print(response)
-
-            elif op == 3:
-                # getall
-
-                for response in stub.GetAll(get_all_requests()):
-                    result += format_to_print(response)
-
-            elif op == 4:
-                # put
-
-                key = input("\nKey: ")
-                val = input("Val: ")
-                
-                response = stub.Put(kvs_pb2.KeyValueRequest(key=key,val=val))
-                result = format_to_print(response)
-    
-            elif op == 5:
-                # putall
-
-                keys = input("\nKeys: ").split()
-                vals = input("Vals: ").split()
-
-                if len(keys) != len(vals):
-                    print("\nMissing key or value!")
+                    print(f"\n{RED}> Invalid operation!{RESET}")
                     continue
-                
-                for response in stub.PutAll(put_requests(keys, vals)):
-                    result += format_to_print(response)
+            
+                print(f"\n{GREEN}> Response:{RESET}\n{result}")
 
-            elif op == 6:
-                # del
+            except grpc.RpcError as e: 
+                # Catches grpc errors like server unavailable or network issues
 
-                key = input("\nKey: ")
+                print(f"\n{RED}{BOLD}Error:{RESET}")
+                print(f"{RED}{BOLD}{e.details()}{RESET}")
+                status_code = e.code()
+                print(f"{RED}{BOLD}{status_code.name}{RESET}")
+                print(f"{RED}{BOLD}{status_code.value}{RESET}")
 
-                response = stub.Del(kvs_pb2.KeyRequest(key=key))
-                result = format_to_print(response)
+            except (TypeError, ValueError) as e:
+                # Catches a type error when calling a function with the wrong type of arguments
+                # or a value error when reading a string for version of key
+                print(f"\n{RED}{BOLD}Error: {e}{RESET}")
 
-            elif op == 7:
-                # delrange
-
-                fr = {}
-                to = {}
-
-                fr["key"] = input("\nFrom key: ")
-                to["key"] = input("To key: ")
-                
-                for response in stub.DelRange(kvs_pb2.KeyRange(fr=fr, to=to)):
-                    result += format_to_print(response)
-
-            elif op == 8:
-                # delall
-
-                keys = input("\nKeys: ").split()
-                
-                for response in stub.DelAll(del_requests(keys)):
-                    result += format_to_print(response)
-
-            elif op == 9:
-                # trim
-
-                key = input("\nKey: ")
-                
-                response = stub.Trim(kvs_pb2.KeyRequest(key=key))
-                result = format_to_print(response)
-
-            elif op == 10:
-                # exit
-
+            except KeyboardInterrupt:
+                # Catches a keyboard interruption like Ctrl+C
                 print(f"\n{BLUE}> Exiting...{RESET}")
                 break
 
-            else:
-                # string or operation out of range
-
-                print(f"\n{RED}> Invalid operation!{RESET}")
-                continue
-        
-            print(f"\n{GREEN}> Response:{RESET}\n{result}")
+            except:
+                # Catches all other unexpected errors
+                print(f"\n{RED}{BOLD}An error occurred.{RESET}")
 
 
 if __name__ == "__main__":
