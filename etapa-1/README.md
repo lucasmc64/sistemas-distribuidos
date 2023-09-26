@@ -69,6 +69,12 @@ To run the client, run the following script:
 
 Now you are running the project beautifully!
 
+## 📹 Recording
+
+### Link for the recording required for the assignment, uploaded at OneDrive:
+
+- <https://ufubr-my.sharepoint.com/:v:/g/personal/lucas_mattos_ufu_br/EaMh6c1VrPFIvhJ1v9audXwBX_EQFCJZYkgYr3Skxgr1fw?nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJPbmVEcml2ZUZvckJ1c2luZXNzIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXciLCJyZWZlcnJhbFZpZXciOiJNeUZpbGVzTGlua0RpcmVjdCJ9fQ&e=QXBh28>
+
 ## 💁 Examples
 
 ### 🤲 `Get`
