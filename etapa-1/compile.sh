@@ -29,7 +29,11 @@ python3 -m pip install grpcio-tools
 
 # Install MQTT
 
-python3 -m pip install paho-mqtt
+# python3 -m pip install paho-mqtt
+
+# Install PySyncObj for Raft protocol
+
+python3 -m pip install pysyncobj
 
 # Compile kvs.proto
 
