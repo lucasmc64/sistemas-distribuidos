@@ -1,0 +1,195 @@
+1
+xxx
+
+5
+abc k1 k2 k22 k111 k5 k20
+zyx asf gdfg hgfhf adas bcvbcv uyiuy
+1
+abc
+
+4
+abc
+bbbccc
+1
+abc
+0
+1
+abc
+1
+1
+abc
+1696400000000
+2
+a
+
+k
+
+2
+a
+
+k2
+
+2
+a
+
+k12
+
+2
+a
+1
+k12
+1
+2
+a
+1695400000000
+k12
+1696400000000
+3
+k2
+
+k11
+
+k111
+
+
+6
+k1
+7
+k2
+k22
+8
+k111 k333 k5
+9
+abc
+1
+abc
+1695600000000
+4
+aa
+test
+1
+
+
+1
+aa
+a
+2
+
+
+
+
+3
+
+4
+
+
+4
+ab
+
+5
+
+
+5
+ac
+
+6
+
+7
+
+
+7
+aa
+
+8
+
+9
+
+10
+
+
+To use this file for testing instead of manually typing all the commands, use:
+$ ./client.sh < test.txt
+
+Running theese operations:
+
+get         k = xxx;
+
+putall      k = abc k1 k2 k22 k111 k5 k20; 
+            vl = zyx asf gdfg hgfhf adas bcvbcv uyiuy;
+
+get         k = abc;
+
+put         k = abc;
+            vl = bbbccc;
+
+get         k = abc;
+            vr = 0;
+
+get         k = abc;
+            vr = 1;
+
+get         k = abc;
+            vr = 1696400000000;
+
+getrange    k = a k;
+
+getrange    k = a k2;
+
+getrange    k = a k12;
+
+getrange    k = a k12;
+            vr = 1 1;
+
+getrange    k = a k12;
+            vr = 1695400000000 1696400000000;
+
+getall      k = k2 k11 k111;
+
+del         k = k1;
+
+delrange    k = k2 k22;
+
+delall      k = k111 k333 k5;
+
+trim        k = abc;
+
+get         k = abc;
+            vr = 1695600000000;
+
+put         k = aa;
+            vl = test;
+
+-> Trying wrong inputs:
+
+get         k = "";
+
+get         k = aa;
+            vr = a;
+
+getrange    k = "" "";
+
+getall      k = "";
+
+put         k = "";
+            vl = "";
+
+put         k = ab;
+            vl = "";
+
+putall      k = "";
+            vl = "";
+
+putall      k = ac;
+            vl = "";
+
+del         k = "";
+
+delrange    k = "" "";
+
+delrange    k = aa "";
+
+delall      k = "";
+
+trim        k = "";
+
+end client
